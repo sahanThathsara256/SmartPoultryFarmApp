@@ -20,13 +20,7 @@ const DashboardScreen = () => {
   const waterLevel = telemetry ? telemetry.waterLevel : 0;
   const feedLevel = telemetry ? telemetry.feedLevel : 0;
 
-  const renderStatusChip = (label: string, isOn?: boolean) => (
-    <View style={[styles.chip, isOn ? styles.chipOn : styles.chipOff]} key={label}>
-      <Text style={styles.chipText}>
-        {label}: {isOn ? 'ON' : 'OFF'}
-      </Text>
-    </View>
-  );
+
 
   return (
     <ScreenWrapper>
@@ -151,13 +145,53 @@ const DashboardScreen = () => {
         </View>
 
         {/* Actuators Section */}
+        {/* Actuators Section */}
         <Text style={styles.sectionTitle}>System Controls</Text>
-        <View style={styles.chipRow}>
-          {renderStatusChip('Lights', telemetry?.lightOn)}
-          {renderStatusChip('Fans', telemetry?.fanOn)}
-          {renderStatusChip('Heater', telemetry?.heaterOn)}
-          {renderStatusChip('Pump', telemetry?.pumpOn)}
-          {renderStatusChip('Feed Motor', telemetry?.feedMotorOn)}
+        <View style={styles.controlsGrid}>
+          {/* Lights */}
+          <View style={[styles.controlCard, telemetry?.lightOn ? styles.controlCardActive : null]}>
+            <View style={[styles.controlIcon, telemetry?.lightOn ? styles.controlIconActive : null]}>
+              <Feather name="sun" size={24} color={telemetry?.lightOn ? colors.background : colors.textSecondary} />
+            </View>
+            <Text style={[styles.controlLabel, telemetry?.lightOn ? styles.controlLabelActive : null]}>Lights</Text>
+            <Text style={styles.controlStatus}>{telemetry?.lightOn ? 'ON' : 'OFF'}</Text>
+          </View>
+
+          {/* Fans */}
+          <View style={[styles.controlCard, telemetry?.fanOn ? styles.controlCardActive : null]}>
+            <View style={[styles.controlIcon, telemetry?.fanOn ? styles.controlIconActive : null]}>
+              <Feather name="wind" size={24} color={telemetry?.fanOn ? colors.background : colors.textSecondary} />
+            </View>
+            <Text style={[styles.controlLabel, telemetry?.fanOn ? styles.controlLabelActive : null]}>Fans</Text>
+            <Text style={styles.controlStatus}>{telemetry?.fanOn ? 'ON' : 'OFF'}</Text>
+          </View>
+
+          {/* Heater */}
+          <View style={[styles.controlCard, telemetry?.heaterOn ? styles.controlCardActive : null]}>
+            <View style={[styles.controlIcon, telemetry?.heaterOn ? styles.controlIconActive : null]}>
+              <Feather name="thermometer" size={24} color={telemetry?.heaterOn ? colors.background : colors.textSecondary} />
+            </View>
+            <Text style={[styles.controlLabel, telemetry?.heaterOn ? styles.controlLabelActive : null]}>Heater</Text>
+            <Text style={styles.controlStatus}>{telemetry?.heaterOn ? 'ON' : 'OFF'}</Text>
+          </View>
+
+          {/* Pump */}
+          <View style={[styles.controlCard, telemetry?.pumpOn ? styles.controlCardActive : null]}>
+            <View style={[styles.controlIcon, telemetry?.pumpOn ? styles.controlIconActive : null]}>
+              <Feather name="droplet" size={24} color={telemetry?.pumpOn ? colors.background : colors.textSecondary} />
+            </View>
+            <Text style={[styles.controlLabel, telemetry?.pumpOn ? styles.controlLabelActive : null]}>Pump</Text>
+            <Text style={styles.controlStatus}>{telemetry?.pumpOn ? 'ON' : 'OFF'}</Text>
+          </View>
+
+          {/* Feed Motor */}
+          <View style={[styles.controlCard, telemetry?.feedMotorOn ? styles.controlCardActive : null]}>
+            <View style={[styles.controlIcon, telemetry?.feedMotorOn ? styles.controlIconActive : null]}>
+              <Feather name="rotate-cw" size={24} color={telemetry?.feedMotorOn ? colors.background : colors.textSecondary} />
+            </View>
+            <Text style={[styles.controlLabel, telemetry?.feedMotorOn ? styles.controlLabelActive : null]}>Feeder</Text>
+            <Text style={styles.controlStatus}>{telemetry?.feedMotorOn ? 'ON' : 'OFF'}</Text>
+          </View>
         </View>
 
         <Text style={styles.timestamp}>
@@ -300,27 +334,52 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.md,
   },
-  chipRow: {
+  controlsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    marginRight: spacing.sm,
+  controlCard: {
+    width: '30%',
+    backgroundColor: colors.surfacePrimary,
+    borderRadius: 16,
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: spacing.sm,
   },
-  chipOn: {
+  controlCardActive: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(74, 222, 128, 0.1)',
+  },
+  controlIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  controlIconActive: {
     backgroundColor: colors.accent,
   },
-  chipOff: {
-    backgroundColor: colors.surfaceSecondary,
-  },
-  chipText: {
-    color: colors.textPrimary,
+  controlLabel: {
+    color: colors.textSecondary,
     fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  controlLabelActive: {
+    color: colors.textPrimary,
     fontWeight: '600',
+  },
+  controlStatus: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
   },
   timestamp: {
     color: colors.textSecondary,
