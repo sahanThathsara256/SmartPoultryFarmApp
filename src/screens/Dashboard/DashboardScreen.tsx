@@ -8,6 +8,8 @@ import { formatTimestamp } from '@utils/formatters';
 import { TemperatureGauge } from '@components/TemperatureGauge';
 import { HumidityGauge } from '@components/HumidityGauge';
 import { WaterTankLevel } from '@components/WaterTankLevel';
+import { FeedContainerLevel } from '@components/FeedContainerLevel';
+import { DetailCard } from '@components/DetailCard';
 import { Feather } from '@expo/vector-icons';
 
 const DashboardScreen = () => {
@@ -132,17 +134,60 @@ const DashboardScreen = () => {
           <View style={styles.cardContentRow}>
             <WaterTankLevel value={waterLevel} />
             <View style={styles.statsColumn}>
-              <View style={styles.statBox}>
-                <Text style={styles.statLabel}>Daily Usage</Text>
-                <Text style={styles.statValue}>45L</Text>
-              </View>
-              <View style={styles.statBox}>
-                <Text style={styles.statLabel}>Refill Status</Text>
-                <Text style={[styles.statValue, { color: colors.success }]}>Auto-fill Ready</Text>
-              </View>
+              <DetailCard
+                label="Daily Usage"
+                value="42L"
+                subLabel="Flow Rate"
+                subValue="2.5 L/min"
+                accentColor={colors.info}
+              />
+              <DetailCard
+                label="Estimated Duration"
+                value="8 days"
+                subLabel="Next Refill"
+                subValue="3-4 days"
+                accentColor={colors.accentWarn}
+              />
             </View>
           </View>
         </View>
+
+        {/* Feed Container Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
+              <Feather name="coffee" size={24} color={colors.textPrimary} />
+            </View>
+            <View style={styles.cardTitleContainer}>
+              <Text style={styles.cardTitle}>Feed Container</Text>
+              <Text style={styles.cardSubtitle}>50kg Capacity</Text>
+            </View>
+            <View style={[styles.statusBadge, { borderColor: colors.success }]}>
+              <Text style={[styles.statusText, { color: colors.success }]}>Available</Text>
+            </View>
+          </View>
+
+          <View style={styles.cardContentRow}>
+            <FeedContainerLevel value={feedLevel || 45} />
+            <View style={styles.statsColumn}>
+              <DetailCard
+                label="Daily Consumption"
+                value="3.2kg"
+                subLabel="Next Feed"
+                subValue="2 hours"
+                accentColor="#F59E0B"
+              />
+              <DetailCard
+                label="Duration Left"
+                value="7 days"
+                subLabel="Refill Alert"
+                subValue="@ 15%"
+                accentColor={colors.success}
+              />
+            </View>
+          </View>
+        </View>
+
 
         {/* Actuators Section */}
         <Text style={styles.sectionTitle}>System Controls</Text>
@@ -183,14 +228,14 @@ const DashboardScreen = () => {
             <Text style={styles.controlStatus}>{telemetry?.pumpOn ? 'ON' : 'OFF'}</Text>
           </View>
 
-          {/* Feed Motor */}
+          {/* Feed Motor
           <View style={[styles.controlCard, telemetry?.feedMotorOn ? styles.controlCardActive : null]}>
             <View style={[styles.controlIcon, telemetry?.feedMotorOn ? styles.controlIconActive : null]}>
               <Feather name="rotate-cw" size={24} color={telemetry?.feedMotorOn ? colors.background : colors.textSecondary} />
             </View>
             <Text style={[styles.controlLabel, telemetry?.feedMotorOn ? styles.controlLabelActive : null]}>Feeder</Text>
             <Text style={styles.controlStatus}>{telemetry?.feedMotorOn ? 'ON' : 'OFF'}</Text>
-          </View>
+          </View> */}
         </View>
 
         <Text style={styles.timestamp}>
@@ -328,7 +373,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.textPrimary,
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '600',
     marginTop: spacing.md,
     marginBottom: spacing.md,
