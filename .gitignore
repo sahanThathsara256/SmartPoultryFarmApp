@@ -1,0 +1,16 @@
+node_modules/
+android/
+ios/
+.expo/
+.expo
+.expo-shared/
+.env
+.env.local
+.env.production
+coverage/
+build/
+.metro-cache/
+*.log
+*.iml
+.vscode/
+.idea/
