@@ -145,7 +145,6 @@ const DashboardScreen = () => {
         </View>
 
         {/* Actuators Section */}
-        {/* Actuators Section */}
         <Text style={styles.sectionTitle}>System Controls</Text>
         <View style={styles.controlsGrid}>
           {/* Lights */}
