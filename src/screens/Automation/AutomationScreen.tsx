@@ -85,7 +85,10 @@ const AutomationScreen = () => {
         </View>
       </RuleSection>
 
-      <RuleSection title="Water" enabled={localRules.water.autoMode} onToggle={value => setLocalRules(prev => ({...prev, water: {...prev.water, autoMode: value}}))}>
+      <RuleSection 
+        title="Water" 
+        enabled={localRules.water.autoMode} 
+        onToggle={value => setLocalRules(prev => ({...prev, water: {...prev.water, autoMode: value}}))}>
         <View style={styles.inlineInputs}>
           <InputField
             label="Min level %"

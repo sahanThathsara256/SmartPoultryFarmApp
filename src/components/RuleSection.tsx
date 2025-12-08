@@ -15,7 +15,12 @@ export const RuleSection: React.FC<Props> = ({title, enabled, onToggle, children
       <View style={styles.headerRow}>
         <Text style={styles.title}>{title}</Text>
         {typeof enabled === 'boolean' && onToggle && (
-          <Switch value={enabled} onValueChange={onToggle} thumbColor={enabled ? colors.accent : colors.border} />
+          <Switch
+            value={enabled}
+            onValueChange={onToggle}
+            thumbColor={colors.surfacePrimary}
+            trackColor={{false: colors.border, true: colors.accent}}
+          />
         )}
       </View>
       <View>{children}</View>

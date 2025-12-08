@@ -1,8 +1,7 @@
 import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {Pressable, StyleSheet, Text, View, Switch} from 'react-native';
 import {colors, spacing} from '@theme';
 import {ControlTarget} from '@types';
-
 interface Props {
   target: ControlTarget;
   label: string;
@@ -15,12 +14,17 @@ export const ControlToggle: React.FC<Props> = ({target, label, isOn, onToggle, i
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => onToggle(target, !isOn)}
       style={[styles.card, isOn ? styles.cardOn : styles.cardOff]}
       disabled={isBusy}>
       <View style={styles.row}>
         <Text style={styles.label}>{label}</Text>
-        <Text style={[styles.state, isOn ? styles.stateOn : styles.stateOff]}>{isOn ? 'ON' : 'OFF'}</Text>
+        <Switch
+          value={isOn}
+          onValueChange={() => onToggle(target, !isOn)}
+          thumbColor={isOn ? colors.surfacePrimary : colors.surfacePrimary}
+          trackColor={{false: colors.border, true: colors.accent}}
+        />
+        {/* <Text style={[styles.state, isOn ? styles.stateOn : styles.stateOff]}>{isOn ? 'ON' : 'OFF'}</Text> */}
       </View>
       {isBusy && <Text style={styles.helper}>Syncing…</Text>}
     </Pressable>

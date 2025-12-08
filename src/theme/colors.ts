@@ -9,7 +9,7 @@ export const colors = {
   accentError: '#F43F5E', // Red
   textPrimary: '#F8FAFC', // White text
   textSecondary: '#94A3B8', // Gray text
-  border: '#1E293B', // Border color
+  border: '#18263dff', // Border color
   success: '#22C55E',
   info: '#0EA5E9',
 

@@ -89,6 +89,8 @@ const SettingsScreen = () => {
                 setForm(prev => ({...prev, mockMode: value}));
                 toggleMockMode(value);
               }}
+              thumbColor={colors.surfacePrimary}
+              trackColor={{false: colors.border, true: colors.accent}}
             />
           </View>
           <Pressable style={[styles.button, styles.secondary]} onPress={handleTest} disabled={testing}>
