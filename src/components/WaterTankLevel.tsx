@@ -12,7 +12,6 @@ interface WaterTankLevelProps {
 export const WaterTankLevel = ({
     value,
     capacity = '500L',
-    status = 'ok',
 }: WaterTankLevelProps) => {
     const width = 120;
     const height = 180;
@@ -116,7 +115,7 @@ export const WaterTankLevel = ({
 
             <View style={styles.textContainer}>
                 <Text style={styles.percentageText}>{Math.round(value)}%</Text>
-                <Text style={styles.capacityText}>{Math.round(parseInt(capacity) * (value / 100))}L / {capacity}</Text>
+                <Text style={styles.capacityText}>{Math.round(parseInt(capacity, 10) * (value / 100))}L / {capacity}</Text>
             </View>
         </View>
     );

@@ -4,66 +4,118 @@ import {AutomationRules, ControlCommand, DeviceSettings, TelemetryData} from '@t
 import {commandTopic, rulesTopic, telemetryTopic} from '@utils/config';
 import {DeviceApi} from './deviceApi';
 
-class MqttDeviceClient implements DeviceApi {
+type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'disconnecting' | 'error';
+
+type TelemetrySubscription = {
+  topic: string;
+  listener: (incomingTopic: string, message: Buffer) => void;
+};
+
+export class MqttDeviceClient implements DeviceApi {
   private client?: RawClient;
   private currentSettings?: DeviceSettings;
-  private telemetryUnsub?: () => void;
+  private connectionState: ConnectionState = 'disconnected';
+  private connectPromise?: Promise<void>;
+  private disconnectPromise?: Promise<void>;
+  private telemetrySubscriptions = new Set<TelemetrySubscription>();
+  private activeTelemetryTopics = new Set<string>();
 
   async connect(settings: DeviceSettings): Promise<void> {
-    if (this.client && this.client.connected) {
+    if (this.disconnectPromise) {
+      await this.disconnectPromise;
+    }
+
+    if (this.client?.connected && this.currentSettings?.deviceId === settings.deviceId) {
       return;
     }
 
+    if (this.connectPromise) {
+      return this.connectPromise;
+    }
+
+    if (this.client?.connected && this.currentSettings?.deviceId !== settings.deviceId) {
+      await this.disconnect();
+    }
+
     this.currentSettings = settings;
+    this.connectionState = 'connecting';
 
-    const options: IClientOptions = {
-      username: settings.username,
-      password: settings.password,
-      reconnectPeriod: 3000,
-      connectTimeout: 10_000,
-      protocol: settings.brokerUrl.startsWith('wss') ? 'wss' : 'ws',
-      port: settings.port,
-    };
-
-    await new Promise<void>((resolve, reject) => {
-      const client = connect(settings.brokerUrl, options);
+    this.connectPromise = new Promise<void>((resolve, reject) => {
+      const client = connect(settings.brokerUrl, this.createClientOptions(settings));
       this.client = client;
 
-      const handleConnect = () => {
+      const cleanup = () => {
+        client.removeListener('connect', handleConnect);
         client.removeListener('error', handleError);
+      };
+
+      const handleConnect = () => {
+        cleanup();
+        this.connectionState = 'connected';
         resolve();
       };
 
       const handleError = (error: Error) => {
-        client.removeListener('connect', handleConnect);
+        cleanup();
+        this.connectionState = 'error';
+        this.cleanupTelemetrySubscriptions();
+        client.end(true);
+        if (this.client === client) {
+          this.client = undefined;
+        }
         reject(error);
       };
 
       client.once('connect', handleConnect);
       client.once('error', handleError);
     });
+
+    try {
+      await this.connectPromise;
+    } finally {
+      this.connectPromise = undefined;
+    }
   }
 
   async disconnect(): Promise<void> {
-    return new Promise(resolve => {
-      if (!this.client) {
-        resolve();
-        return;
-      }
-      this.client.end(true, {}, () => {
-        this.client = undefined;
-        this.telemetryUnsub?.();
+    if (this.disconnectPromise) {
+      return this.disconnectPromise;
+    }
+
+    const client = this.client;
+    if (!client) {
+      this.cleanupTelemetrySubscriptions();
+      this.currentSettings = undefined;
+      this.connectionState = 'disconnected';
+      return;
+    }
+
+    this.connectionState = 'disconnecting';
+    this.cleanupTelemetrySubscriptions();
+
+    this.disconnectPromise = new Promise(resolve => {
+      client.end(true, {}, () => {
+        if (this.client === client) {
+          this.client = undefined;
+        }
+        this.currentSettings = undefined;
+        this.connectionState = 'disconnected';
         resolve();
       });
     });
+
+    try {
+      await this.disconnectPromise;
+    } finally {
+      this.disconnectPromise = undefined;
+    }
   }
 
   subscribeTelemetry(onMessage: (payload: TelemetryData) => void): () => void {
-    if (!this.client || !this.currentSettings) {
-      throw new Error('MQTT client not connected');
-    }
+    const client = this.requireConnectedClient();
+    const settings = this.requireCurrentSettings();
 
-    const topic = telemetryTopic(this.currentSettings.deviceId);
+    const topic = telemetryTopic(settings.deviceId);
     // ESP32 should publish JSON like:
     // { "temperature": 28.4, "humidity": 62, "pumpOn": false, "timestamp": "2024-01-15T10:22:11Z" }
     const listener = (incomingTopic: string, message: Buffer) => {
@@ -78,26 +130,46 @@ class MqttDeviceClient implements DeviceApi {
       }
     };
 
-    this.client.subscribe(topic, {qos: 1}, (err: Error | null, _granted?: ISubscriptionGrant[]) => {
-      if (err) {
-        console.warn('Failed to subscribe telemetry', err);
+    const subscription: TelemetrySubscription = {topic, listener};
+
+    if (!this.activeTelemetryTopics.has(topic)) {
+      client.subscribe(topic, {qos: 1}, (err: Error | null, granted?: ISubscriptionGrant[]) => {
+        if (err) {
+          console.warn('Failed to subscribe telemetry', err);
+          return;
+        }
+        const hasQosOneGrant = (granted ?? []).some(grant => grant.qos >= 1);
+        if (!hasQosOneGrant) {
+          console.warn('Telemetry subscription granted with lower QoS than requested', granted);
+        }
+      });
+      this.activeTelemetryTopics.add(topic);
+    }
+
+    client.on('message', listener);
+    this.telemetrySubscriptions.add(subscription);
+
+    return () => {
+      if (!this.telemetrySubscriptions.delete(subscription)) {
+        return;
       }
-    });
-    this.client.on('message', listener);
 
-    this.telemetryUnsub = () => {
-      this.client?.unsubscribe(topic);
-      this.client?.off('message', listener);
+      const activeClient = this.client;
+      activeClient?.off('message', listener);
+
+      const hasOtherListenersForTopic = Array.from(this.telemetrySubscriptions).some(
+        current => current.topic === topic,
+      );
+      if (!hasOtherListenersForTopic && this.activeTelemetryTopics.has(topic)) {
+        activeClient?.unsubscribe(topic);
+        this.activeTelemetryTopics.delete(topic);
+      }
     };
-
-    return this.telemetryUnsub;
   }
 
   async publishCommand(command: ControlCommand): Promise<void> {
-    if (!this.client || !this.currentSettings) {
-      throw new Error('MQTT client not connected');
-    }
-    const topic = commandTopic(this.currentSettings.deviceId);
+    const settings = this.requireCurrentSettings();
+    const topic = commandTopic(settings.deviceId);
     // Commands follow { target: 'fan', action: 'on' } so the ESP32 can switch actuators quickly.
     const payload = JSON.stringify({
       target: command.target,
@@ -108,18 +180,18 @@ class MqttDeviceClient implements DeviceApi {
   }
 
   async publishRules(rules: AutomationRules): Promise<void> {
-    if (!this.client || !this.currentSettings) {
-      throw new Error('MQTT client not connected');
-    }
-    const topic = rulesTopic(this.currentSettings.deviceId);
+    const settings = this.requireCurrentSettings();
+    const topic = rulesTopic(settings.deviceId);
     // Automation payload mirrors ESP32 rule schema for easy persistence on the microcontroller.
     const payload = JSON.stringify({rules, updatedAt: new Date().toISOString()});
     return this.publish(topic, payload);
   }
 
   private publish(topic: string, payload: string) {
+    const client = this.requireConnectedClient();
+
     return new Promise<void>((resolve, reject) => {
-      this.client!.publish(topic, payload, {qos: 1, retain: false}, (err?: Error) => {
+      client.publish(topic, payload, {qos: 1, retain: false}, (err?: Error) => {
         if (err) {
           reject(err);
           return;
@@ -130,14 +202,79 @@ class MqttDeviceClient implements DeviceApi {
   }
 
   async testConnection(settings: DeviceSettings): Promise<boolean> {
+    const testClient = connect(settings.brokerUrl, this.createClientOptions(settings));
+
     try {
-      await this.connect(settings);
-      await this.disconnect();
+      await new Promise<void>((resolve, reject) => {
+        const cleanup = () => {
+          testClient.removeListener('connect', handleConnect);
+          testClient.removeListener('error', handleError);
+        };
+
+        const handleConnect = () => {
+          cleanup();
+          resolve();
+        };
+
+        const handleError = (error: Error) => {
+          cleanup();
+          reject(error);
+        };
+
+        testClient.once('connect', handleConnect);
+        testClient.once('error', handleError);
+      });
+
+      await new Promise<void>(resolve => {
+        testClient.end(true, {}, () => resolve());
+      });
+
       return true;
     } catch (error) {
       console.warn('Connection test failed', error);
+      testClient.end(true);
       return false;
     }
+  }
+
+  private createClientOptions(settings: DeviceSettings): IClientOptions {
+    return {
+      username: settings.username,
+      password: settings.password,
+      reconnectPeriod: 3000,
+      connectTimeout: 10_000,
+      protocol: settings.brokerUrl.startsWith('wss') ? 'wss' : 'ws',
+      port: settings.port,
+    };
+  }
+
+  private requireConnectedClient(): RawClient {
+    if (!this.client || !this.client.connected || this.connectionState !== 'connected') {
+      throw new Error(`MQTT client is not connected (state: ${this.connectionState})`);
+    }
+
+    return this.client;
+  }
+
+  private requireCurrentSettings(): DeviceSettings {
+    if (!this.currentSettings) {
+      throw new Error('MQTT client settings are not available');
+    }
+
+    return this.currentSettings;
+  }
+
+  private cleanupTelemetrySubscriptions(): void {
+    const activeClient = this.client;
+    this.telemetrySubscriptions.forEach(({topic, listener}) => {
+      activeClient?.off('message', listener);
+      if (this.activeTelemetryTopics.has(topic)) {
+        activeClient?.unsubscribe(topic);
+      }
+    });
+
+    this.telemetrySubscriptions.clear();
+    this.activeTelemetryTopics.clear();
   }
 }
 

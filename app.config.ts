@@ -11,6 +11,13 @@ const config: ExpoConfig = {
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
+    infoPlist: {
+      NSAppTransportSecurity: {
+        NSAllowsArbitraryLoads: true,
+        NSAllowsLocalNetworking: true,
+      },
+      NSLocalNetworkUsageDescription: 'This app needs to communicate with the ESP32 device on your local network.',
+    },
   },
   extra: {
     mockMode: process.env.MOCK_MODE ?? '0',
@@ -20,6 +27,7 @@ const config: ExpoConfig = {
     mqttPassword: process.env.MQTT_PASSWORD ?? '',
     mqttDeviceId: process.env.MQTT_DEVICE_ID ?? 'demo-coop-001',
   },
+  plugins: ['expo-asset'],
 };
 
 export default config;

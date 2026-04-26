@@ -3,12 +3,16 @@ export interface TelemetryData {
   humidity: number;
   waterLevel: number;
   feedLevel: number;
+  lightLevel?: number;  // LDR sensor reading (0-100%)
+  ldr?: number;         // Raw LDR value (0-4095)
   lightOn: boolean;
   fanOn: boolean;
   heaterOn: boolean;
   pumpOn: boolean;
   feedMotorOn: boolean;
   sprayerOn?: boolean;
+  autoLightMode?: boolean;
+  uptime?: number;
   timestamp: string;
 }
 
@@ -46,6 +50,13 @@ export interface DeviceSettings {
   password?: string;
   deviceId: string;
   mockMode?: boolean;
+  transport?: 'mqtt' | 'firebase' | 'http';
+  firebase?: {
+    apiKey?: string;
+    projectId?: string;
+    appId?: string;
+    databaseURL?: string;
+  };
 }
 
 export type ControlTarget =
@@ -58,5 +69,5 @@ export type ControlTarget =
 
 export interface ControlCommand {
   target: ControlTarget;
-  action: 'on' | 'off';
+  action: 'on' | 'off' | 'toggle';
 }

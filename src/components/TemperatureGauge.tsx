@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop, Path, G } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 import { colors } from '@theme';
 
 interface TemperatureGaugeProps {
@@ -19,7 +19,6 @@ export const TemperatureGauge = ({
     const radius = 60;
     const strokeWidth = 12;
     const center = radius + strokeWidth;
-    const circumference = 2 * Math.PI * radius;
 
     // Calculate percentage
     const clampedValue = Math.min(Math.max(value, min), max);
@@ -33,22 +32,22 @@ export const TemperatureGauge = ({
     const progressAngle = startAngle + (angleRange * percentage);
 
     // Helper to calculate coordinates
-    const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+    const polarToCartesian = (centerX: number, centerY: number, arcRadius: number, angleInDegrees: number) => {
         const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
         return {
-            x: centerX + (radius * Math.cos(angleInRadians)),
-            y: centerY + (radius * Math.sin(angleInRadians))
+            x: centerX + (arcRadius * Math.cos(angleInRadians)),
+            y: centerY + (arcRadius * Math.sin(angleInRadians)),
         };
     };
 
-    const createArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
-        const start = polarToCartesian(x, y, radius, endAngle);
-        const end = polarToCartesian(x, y, radius, startAngle);
-        const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+    const createArc = (centerX: number, centerY: number, arcRadius: number, fromAngle: number, toAngle: number) => {
+        const start = polarToCartesian(centerX, centerY, arcRadius, toAngle);
+        const end = polarToCartesian(centerX, centerY, arcRadius, fromAngle);
+        const largeArcFlag = toAngle - fromAngle <= 180 ? '0' : '1';
         return [
-            "M", start.x, start.y,
-            "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
-        ].join(" ");
+            'M', start.x, start.y,
+            'A', arcRadius, arcRadius, 0, largeArcFlag, 0, end.x, end.y,
+        ].join(' ');
     };
 
     return (

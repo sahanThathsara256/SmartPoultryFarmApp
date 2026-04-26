@@ -20,4 +20,5 @@ export type AppTabsParamList = {
 export type SettingsStackParamList = {
   SettingsMain: undefined;
   History: undefined;
+  Debug: undefined;
 };

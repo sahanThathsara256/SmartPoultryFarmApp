@@ -12,7 +12,6 @@ interface FeedContainerLevelProps {
 export const FeedContainerLevel = ({
     value,
     capacity = '50kg',
-    status = 'ok',
 }: FeedContainerLevelProps) => {
     const width = 120;
     const height = 180;
@@ -22,7 +21,6 @@ export const FeedContainerLevel = ({
     const topWidth = 60;
     const bottomWidth = 100;
     const containerHeight = 140;
-    const containerX = (width - bottomWidth) / 2;
     const containerY = 20;
 
     // Calculate fill height
@@ -41,7 +39,7 @@ export const FeedContainerLevel = ({
                 x: Math.random() * (bottomWidth - 20) + 10,
                 y: Math.random() * (currentFillHeight - 10) + 5,
                 r: Math.random() * 1.5 + 0.5,
-                opacity: Math.random() * 0.5 + 0.2
+                opacity: Math.random() * 0.5 + 0.2,
             });
         }
         return dotArray;
@@ -131,7 +129,7 @@ export const FeedContainerLevel = ({
 
             <View style={styles.textContainer}>
                 <Text style={styles.percentageText}>{Math.round(value)}%</Text>
-                <Text style={styles.capacityText}>{Math.round(parseInt(capacity) * (value / 100))}kg / {capacity}</Text>
+                <Text style={styles.capacityText}>{Math.round(parseInt(capacity, 10) * (value / 100))}kg / {capacity}</Text>
             </View>
         </View>
     );

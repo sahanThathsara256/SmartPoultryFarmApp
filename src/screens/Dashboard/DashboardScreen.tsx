@@ -1,8 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { ScreenWrapper } from '@components/ScreenWrapper';
 import { useTelemetryStore } from '@store/useTelemetryStore';
-import { useDeviceStore } from '@store/useDeviceStore';
 import { colors, spacing } from '@theme';
 import { formatTimestamp } from '@utils/formatters';
 import { TemperatureGauge } from '@components/TemperatureGauge';
@@ -14,7 +13,6 @@ import { Feather } from '@expo/vector-icons';
 
 const DashboardScreen = () => {
   const telemetry = useTelemetryStore(state => state.telemetry);
-  const deviceStatus = useDeviceStore(state => state.status);
 
   // Mock data if telemetry is null for visualization
   const tempValue = telemetry ? telemetry.temperature : 0;
@@ -30,12 +28,15 @@ const DashboardScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.appName}>AgriTech Pro</Text>
+            <Text style={styles.appName}>SmartPoultryFarmApp</Text>
             <Text style={styles.appSubtitle}>Intelligent Farm Management</Text>
           </View>
           <View style={styles.liveIndicator}>
             <View style={styles.liveDot} />
             <Text style={styles.liveText}>Live</Text>
+            {telemetry?.uptime !== undefined && (
+              <Text style={styles.uptimeText}> | UP: {Math.floor(telemetry.uptime / 60)}m</Text>
+            )}
           </View>
         </View>
 
@@ -155,7 +156,7 @@ const DashboardScreen = () => {
         {/* Feed Container Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
+            <View style={[styles.iconContainer, styles.feedIconContainer]}>
               <Feather name="coffee" size={24} color={colors.textPrimary} />
             </View>
             <View style={styles.cardTitleContainer}>
@@ -200,6 +201,15 @@ const DashboardScreen = () => {
             <Text style={[styles.controlLabel, telemetry?.lightOn ? styles.controlLabelActive : null]}>Lights</Text>
             <Text style={styles.controlStatus}>{telemetry?.lightOn ? 'ON' : 'OFF'}</Text>
           </View>
+          
+          {/* Auto Light Mode */}
+          <View style={[styles.controlCard, telemetry?.autoLightMode ? styles.controlCardActive : null]}>
+            <View style={[styles.controlIcon, telemetry?.autoLightMode ? styles.controlIconActive : null]}>
+              <Feather name="cpu" size={24} color={telemetry?.autoLightMode ? colors.background : colors.textSecondary} />
+            </View>
+            <Text style={[styles.controlLabel, telemetry?.autoLightMode ? styles.controlLabelActive : null]}>Auto Light</Text>
+            <Text style={styles.controlStatus}>{telemetry?.autoLightMode ? 'ENABLED' : 'MANUAL'}</Text>
+          </View>
 
           {/* Fans */}
           <View style={[styles.controlCard, telemetry?.fanOn ? styles.controlCardActive : null]}>
@@ -242,7 +252,7 @@ const DashboardScreen = () => {
           {telemetry ? `Last Updated: ${formatTimestamp(telemetry.timestamp)}` : 'Waiting for data...'}
         </Text>
 
-        <View style={{ height: 80 }} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </ScreenWrapper>
   );
@@ -284,6 +294,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  uptimeText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+  },
   card: {
     backgroundColor: colors.surfacePrimary,
     borderRadius: 20,
@@ -305,6 +319,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
+  },
+  feedIconContainer: {
+    backgroundColor: '#F59E0B',
   },
   cardTitleContainer: {
     flex: 1,
@@ -377,6 +394,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: spacing.md,
     marginBottom: spacing.md,
+  },
+  bottomSpacer: {
+    height: 80,
   },
   controlsGrid: {
     flexDirection: 'row',

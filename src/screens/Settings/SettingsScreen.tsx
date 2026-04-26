@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TextInputProps, View} from 'react-native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
@@ -16,6 +16,7 @@ const SettingsScreen = () => {
   const logout = useAuthStore(state => state.logout);
   const [form, setForm] = useState<DeviceSettings>(settings);
   const [testing, setTesting] = useState(false);
+  const [togglingLed, setTogglingLed] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -43,6 +44,20 @@ const SettingsScreen = () => {
     }
   };
 
+  const handleToggleLed = useCallback(async () => {
+    try {
+      setTogglingLed(true);
+      const client = getDeviceClient(settings);
+      await client.connect(settings);
+      await client.publishCommand({target: 'light', action: 'toggle'});
+      Alert.alert('Success', 'LED toggle command sent');
+    } catch (error) {
+      Alert.alert('Command failed', (error as Error)?.message ?? 'Unknown error');
+    } finally {
+      setTogglingLed(false);
+    }
+  }, [settings]);
+
   return (
     <ScreenWrapper scrollable={false}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -50,7 +65,52 @@ const SettingsScreen = () => {
         <Text style={styles.subtitle}>Manage your device connection and preferences.</Text>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>MQTT connection</Text>
+          <Text style={styles.sectionTitle}>Connection</Text>
+
+          {/* ── Transport picker ── */}
+          <Text style={styles.sectionSubtitle}>Connection Mode</Text>
+          <View style={styles.transportRow}>
+            {(['http', 'firebase', 'mqtt'] as const).map(t => (
+              <Pressable
+                key={t}
+                style={[
+                  styles.transportOption,
+                  form.transport === t && styles.transportOptionActive,
+                ]}
+                onPress={() => setForm(prev => ({...prev, transport: t}))}>
+                <Text
+                  style={[
+                    styles.transportLabel,
+                    form.transport === t && styles.transportLabelActive,
+                  ]}>
+                  {t === 'http' ? '📡 Direct' : t === 'firebase' ? '☁️ Firebase' : '📨 MQTT'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* ── HTTP (Direct ESP32) settings ── */}
+          {form.transport === 'http' && (
+            <>
+              <Text style={styles.sectionSubtitle}>ESP32 Direct Connection</Text>
+              <Text style={styles.helpText}>
+                Connect your phone to SmartFarm_AP WiFi first.{'\n'}
+                Password: smartfarm123
+              </Text>
+              <Input
+                label="ESP32 IP Address"
+                autoCapitalize="none"
+                value={form.brokerUrl}
+                onChangeText={text => setForm(prev => ({...prev, brokerUrl: text}))}
+                placeholder="http://192.168.4.1"
+              />
+            </>
+          )}
+
+          {/* ── MQTT settings ── */}
+          {form.transport === 'mqtt' && (
+            <>
+              <Text style={styles.sectionSubtitle}>MQTT</Text>
           <Input
             label="Broker URL"
             autoCapitalize="none"
@@ -81,6 +141,51 @@ const SettingsScreen = () => {
             value={form.password ?? ''}
             onChangeText={text => setForm(prev => ({...prev, password: text}))}
           />
+            </>
+          )}
+
+          {/* ── Firebase settings ── */}
+          {form.transport === 'firebase' && (
+            <>
+              <Text style={styles.sectionSubtitle}>Firebase Realtime DB</Text>
+              <Input
+                label="API Key"
+                autoCapitalize="none"
+                value={form.firebase?.apiKey ?? ''}
+                onChangeText={text =>
+                  setForm(prev => ({...prev, firebase: {...(prev.firebase || {}), apiKey: text}}))
+                }
+              />
+              <Input
+                label="Project ID"
+                autoCapitalize="none"
+                value={form.firebase?.projectId ?? ''}
+                onChangeText={text =>
+                  setForm(prev => ({...prev, firebase: {...(prev.firebase || {}), projectId: text}}))
+                }
+              />
+              <Input
+                label="App ID"
+                autoCapitalize="none"
+                value={form.firebase?.appId ?? ''}
+                onChangeText={text => setForm(prev => ({...prev, firebase: {...(prev.firebase || {}), appId: text}}))}
+              />
+              <Input
+                label="Database URL"
+                autoCapitalize="none"
+                value={form.firebase?.databaseURL ?? ''}
+                onChangeText={text =>
+                  setForm(prev => ({...prev, firebase: {...(prev.firebase || {}), databaseURL: text}}))
+                }
+              />
+              <Input
+                label="Device ID"
+                autoCapitalize="none"
+                value={form.deviceId}
+                onChangeText={text => setForm(prev => ({...prev, deviceId: text}))}
+              />
+            </>
+          )}
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>Mock data mode</Text>
             <Switch
@@ -102,9 +207,22 @@ const SettingsScreen = () => {
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Pressable
+            style={[styles.button, styles.ledToggle]}
+            onPress={handleToggleLed}
+            disabled={togglingLed}>
+            <Text style={styles.buttonText}>{togglingLed ? '💡 Toggling...' : '💡 Toggle LED Light'}</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.sectionTitle}>Account</Text>
           <Pressable style={[styles.button, styles.secondary]} onPress={() => navigation.navigate('History')}>
             <Text style={styles.buttonText}>View history</Text>
+          </Pressable>
+          <Pressable style={[styles.button, styles.debug]} onPress={() => navigation.navigate('Debug')}>
+            <Text style={styles.buttonText}>🔧 Debug Panel</Text>
           </Pressable>
           <Pressable style={[styles.button, styles.danger]} onPress={logout}>
             <Text style={styles.buttonText}>Sign out</Text>
@@ -150,6 +268,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: spacing.md,
   },
+  sectionSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
+  },
   inputGroup: {
     marginBottom: spacing.md,
   },
@@ -179,8 +303,14 @@ const styles = StyleSheet.create({
   secondary: {
     backgroundColor: colors.surfacePrimary,
   },
+  debug: {
+    backgroundColor: colors.info,
+  },
   danger: {
     backgroundColor: colors.accentError,
+  },
+  ledToggle: {
+    backgroundColor: colors.accentWarn,
   },
   switchRow: {
     flexDirection: 'row',
@@ -190,6 +320,43 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     color: colors.textPrimary,
+  },
+  transportRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  transportOption: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfacePrimary,
+    alignItems: 'center',
+  },
+  transportOptionActive: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+  },
+  transportLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  transportLabelActive: {
+    color: colors.accent,
+    fontWeight: '700',
+  },
+  helpText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    backgroundColor: colors.surfacePrimary,
+    borderRadius: 10,
+    padding: spacing.sm,
+    marginBottom: spacing.md,
+    lineHeight: 20,
   },
 });
 

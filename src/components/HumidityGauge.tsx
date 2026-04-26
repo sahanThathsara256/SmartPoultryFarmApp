@@ -10,7 +10,6 @@ interface HumidityGaugeProps {
 
 export const HumidityGauge = ({
     value,
-    status = 'optimal',
 }: HumidityGaugeProps) => {
     const radius = 50;
     const size = radius * 2;
@@ -18,7 +17,7 @@ export const HumidityGauge = ({
 
     // Create a wave path
     // Simple approximation: a rectangle with a wavy top
-    // For a static view, a flat level or slight curve is fine. 
+    // For a static view, a flat level or slight curve is fine.
     // Let's do a flat level for robustness or a simple curve.
     // To make it look like the design (liquid ball), we clip a rect with the circle.
 
