@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   deviceSettings: '@smart-poultry/device-settings',
   automationRules: '@smart-poultry/automation-rules',
   auth: '@smart-poultry/auth',
+  themeMode: '@smart-poultry/theme-mode',
 };
 
 export const loadItem = async <T>(key: string): Promise<T | null> => {

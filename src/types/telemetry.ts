@@ -12,6 +12,13 @@ export interface TelemetryData {
   feedMotorOn: boolean;
   sprayerOn?: boolean;
   autoLightMode?: boolean;
+  autoTempMode?: boolean;
+  tempMin?: number;
+  tempMax?: number;
+  autoWaterPumpMode?: boolean;
+  waterPumpLow?: number;
+  waterPumpHigh?: number;
+  alerts?: string[];
   uptime?: number;
   timestamp: string;
 }
@@ -30,6 +37,7 @@ export interface AutomationRules {
   water: {
     autoMode: boolean;
     minLevel: number;
+    maxLevel: number; // Added to match ESP32
     targetLevel: number;
   };
   feed: {

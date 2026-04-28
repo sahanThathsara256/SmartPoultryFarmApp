@@ -7,7 +7,7 @@
  * ESP32 API endpoints:
  *   GET  /api/telemetry   → sensor data + device states
  *   POST /api/command      → { target, action }
- *   POST /api/autolight    → { enabled }
+ *   POST /api/rules        → { lightEnabled, tempEnabled, tempMin, tempMax }
  */
 
 import {AutomationRules, ControlCommand, DeviceSettings, TelemetryData} from '@types';
@@ -95,10 +95,18 @@ class HttpDeviceApi implements DeviceApi {
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/autolight`, {
+      const response = await fetch(`${this.baseUrl}/api/rules`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({enabled: rules.lightSchedule.enabled}),
+        body: JSON.stringify({
+          lightEnabled: rules.lightSchedule.enabled,
+          tempEnabled: rules.temperature.enabled,
+          tempMin: rules.temperature.minTemp,
+          tempMax: rules.temperature.maxTemp,
+          waterPumpEnabled: rules.water.autoMode,
+          waterPumpLow: rules.water.minLevel,
+          waterPumpHigh: rules.water.maxLevel
+        }),
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -108,7 +116,7 @@ class HttpDeviceApi implements DeviceApi {
       }
     } catch (error) {
       clearTimeout(timeout);
-      console.warn('[httpDeviceApi] failed to sync autolight', error);
+      console.warn('[httpDeviceApi] failed to sync rules', error);
       throw error;
     }
   }

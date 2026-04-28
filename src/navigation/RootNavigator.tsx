@@ -6,29 +6,30 @@ import AuthNavigator from './AuthNavigator';
 import MainTabs from './MainTabs';
 import SplashScreen from '@screens/Auth/SplashScreen';
 import {useAuthStore} from '@store/useAuthStore';
-import {colors} from '@theme';
+import {useThemeColors} from '@theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-const navTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: colors.background,
-    card: colors.surfacePrimary,
-    text: colors.textPrimary,
-    border: colors.border,
-  },
-};
 
 const RootNavigator = () => {
   const user = useAuthStore(state => state.user);
   const hydrate = useAuthStore(state => state.hydrate);
   const initializing = useAuthStore(state => state.initializing);
+  const colors = useThemeColors();
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  const navTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: colors.background,
+      card: colors.surfacePrimary,
+      text: colors.textPrimary,
+      border: colors.border,
+    },
+  };
 
   return (
     <NavigationContainer theme={navTheme}>

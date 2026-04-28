@@ -4,7 +4,7 @@ import {ScreenWrapper} from '@components/ScreenWrapper';
 import {RuleSection} from '@components/RuleSection';
 import {useAutomationStore} from '@store/useAutomationStore';
 import {useDeviceStore} from '@store/useDeviceStore';
-import {colors, spacing} from '@theme';
+import {spacing, useThemeColors} from '@theme';
 import {getDeviceClient} from '@services/deviceService';
 import {AutomationRules} from '@types';
 
@@ -13,8 +13,10 @@ const AutomationScreen = () => {
   const setRules = useAutomationStore(state => state.setRules);
   const loadRules = useAutomationStore(state => state.loadRules);
   const loading = useAutomationStore(state => state.loading);
-  const [localRules, setLocalRules] = useState<AutomationRules>(rules);
   const settings = useDeviceStore(state => state.settings);
+  const colors = useThemeColors();
+  const styles = makeStyles(colors);
+  const [localRules, setLocalRules] = useState<AutomationRules>(rules);
 
   useEffect(() => {
     loadRules();
@@ -39,7 +41,7 @@ const AutomationScreen = () => {
     <ScreenWrapper>
       <Text style={styles.title}>Automation rules</Text>
       <Text style={styles.subtitle}>Configure thresholds and schedules enforced by the ESP32.</Text>
-      {loading && <Text style={styles.loading}>Syncing rules…</Text>}
+      {loading ? <Text style={styles.loading}>Syncing rules...</Text> : null}
 
       <RuleSection
         title="Temperature"
@@ -47,6 +49,8 @@ const AutomationScreen = () => {
         onToggle={value => setLocalRules(prev => ({...prev, temperature: {...prev.temperature, enabled: value}}))}>
         <View style={styles.inlineInputs}>
           <InputField
+            styles={styles}
+            colors={colors}
             label="Min"
             value={String(localRules.temperature.minTemp)}
             onChangeText={text =>
@@ -54,6 +58,8 @@ const AutomationScreen = () => {
             }
           />
           <InputField
+            styles={styles}
+            colors={colors}
             label="Max"
             value={String(localRules.temperature.maxTemp)}
             onChangeText={text =>
@@ -63,27 +69,31 @@ const AutomationScreen = () => {
         </View>
       </RuleSection>
 
-      <RuleSection
+      {/* <RuleSection
         title="Humidity"
         enabled={localRules.humidity.enabled}
         onToggle={value => setLocalRules(prev => ({...prev, humidity: {...prev.humidity, enabled: value}}))}>
         <View style={styles.inlineInputs}>
           <InputField
-            label="Min"
+            styles={styles}
+            colors={colors}
+            label="Min %"
             value={String(localRules.humidity.minHumidity)}
             onChangeText={text =>
               setLocalRules(prev => ({...prev, humidity: {...prev.humidity, minHumidity: Number(text)}}))
             }
           />
           <InputField
-            label="Max"
+            styles={styles}
+            colors={colors}
+            label="Max %"
             value={String(localRules.humidity.maxHumidity)}
             onChangeText={text =>
               setLocalRules(prev => ({...prev, humidity: {...prev.humidity, maxHumidity: Number(text)}}))
             }
           />
         </View>
-      </RuleSection>
+      </RuleSection> */}
 
       <RuleSection
         title="Water"
@@ -91,14 +101,20 @@ const AutomationScreen = () => {
         onToggle={value => setLocalRules(prev => ({...prev, water: {...prev.water, autoMode: value}}))}>
         <View style={styles.inlineInputs}>
           <InputField
+            styles={styles}
+            colors={colors}
             label="Min level %"
             value={String(localRules.water.minLevel)}
             onChangeText={text => setLocalRules(prev => ({...prev, water: {...prev.water, minLevel: Number(text)}}))}
           />
           <InputField
-            label="Target %"
-            value={String(localRules.water.targetLevel)}
-            onChangeText={text => setLocalRules(prev => ({...prev, water: {...prev.water, targetLevel: Number(text)}}))}
+            styles={styles}
+            colors={colors}
+            label="Max level %"
+            value={String(localRules.water.maxLevel)}
+            onChangeText={text =>
+              setLocalRules(prev => ({...prev, water: {...prev.water, maxLevel: Number(text), targetLevel: Number(text)}}))
+            }
           />
         </View>
       </RuleSection>
@@ -108,29 +124,35 @@ const AutomationScreen = () => {
         enabled={localRules.feed.autoAlert}
         onToggle={value => setLocalRules(prev => ({...prev, feed: {...prev.feed, autoAlert: value}}))}>
         <InputField
+          styles={styles}
+          colors={colors}
           label="Min level %"
           value={String(localRules.feed.minLevel)}
           onChangeText={text => setLocalRules(prev => ({...prev, feed: {...prev.feed, minLevel: Number(text)}}))}
         />
       </RuleSection>
 
-      <RuleSection
+      {/* <RuleSection
         title="Light schedule"
         enabled={localRules.lightSchedule.enabled}
         onToggle={value => setLocalRules(prev => ({...prev, lightSchedule: {...prev.lightSchedule, enabled: value}}))}>
         <View style={styles.inlineInputs}>
           <InputField
+            styles={styles}
+            colors={colors}
             label="On"
             value={localRules.lightSchedule.onTime}
             onChangeText={text => setLocalRules(prev => ({...prev, lightSchedule: {...prev.lightSchedule, onTime: text}}))}
           />
           <InputField
+            styles={styles}
+            colors={colors}
             label="Off"
             value={localRules.lightSchedule.offTime}
             onChangeText={text => setLocalRules(prev => ({...prev, lightSchedule: {...prev.lightSchedule, offTime: text}}))}
           />
         </View>
-      </RuleSection>
+      </RuleSection> */}
 
       <Pressable style={styles.primaryBtn} onPress={handleSave}>
         <Text style={styles.primaryText}>Save rules</Text>
@@ -139,56 +161,76 @@ const AutomationScreen = () => {
   );
 };
 
-const InputField = ({label, value, onChangeText}: {label: string; value: string; onChangeText: (text: string) => void}) => (
+const InputField = ({
+  label,
+  value,
+  onChangeText,
+  styles,
+  colors,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  styles: ReturnType<typeof makeStyles>;
+  colors: ReturnType<typeof useThemeColors>;
+}) => (
   <View style={styles.inputGroup}>
     <Text style={styles.inputLabel}>{label}</Text>
-    <TextInput value={value} onChangeText={onChangeText} style={styles.input} keyboardType="decimal-pad" />
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      style={styles.input}
+      keyboardType="decimal-pad"
+      placeholderTextColor={colors.textSecondary}
+    />
   </View>
 );
 
-const styles = StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
-  },
-  loading: {
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  inlineInputs: {
-    flexDirection: 'row',
-    columnGap: spacing.md,
-  },
-  inputGroup: {
-    flex: 1,
-  },
-  inputLabel: {
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  input: {
-    backgroundColor: colors.surfacePrimary,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    color: colors.textPrimary,
-  },
-  primaryBtn: {
-    backgroundColor: colors.accent,
-    padding: spacing.md,
-    borderRadius: 14,
-    marginTop: spacing.lg,
-  },
-  primaryText: {
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-});
+const makeStyles = (colors: ReturnType<typeof useThemeColors>) =>
+  StyleSheet.create({
+    title: {
+      color: colors.textPrimary,
+      fontSize: 24,
+      fontWeight: '700',
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      marginBottom: spacing.lg,
+    },
+    loading: {
+      color: colors.textSecondary,
+      marginBottom: spacing.md,
+    },
+    inlineInputs: {
+      flexDirection: 'row',
+      columnGap: spacing.md,
+    },
+    inputGroup: {
+      flex: 1,
+    },
+    inputLabel: {
+      color: colors.textSecondary,
+      marginBottom: spacing.xs,
+    },
+    input: {
+      backgroundColor: colors.surfacePrimary,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      color: colors.textPrimary,
+    },
+    primaryBtn: {
+      backgroundColor: colors.accent,
+      padding: spacing.md,
+      borderRadius: 14,
+      marginTop: spacing.lg,
+    },
+    primaryText: {
+      textAlign: 'center',
+      fontWeight: '600',
+      color: colors.background,
+    },
+  });
 
 export default AutomationScreen;

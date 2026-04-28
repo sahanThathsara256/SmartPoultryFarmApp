@@ -1,4 +1,4 @@
-import {ControlCommand, DeviceSettings, TelemetryData} from '@types';
+import {AutomationRules, ControlCommand, DeviceSettings, TelemetryData} from '@types';
 import {DeviceApi} from './deviceApi';
 
 class MockDeviceApi implements DeviceApi {
@@ -39,8 +39,14 @@ class MockDeviceApi implements DeviceApi {
     } as TelemetryData;
   }
 
-  async publishRules(): Promise<void> {
-    // Pretend rules saved successfully
+  async publishRules(rules: AutomationRules): Promise<void> {
+    this.lastTelemetry = {
+      ...this.lastTelemetry,
+      autoLightMode: rules.lightSchedule.enabled,
+      autoTempMode: rules.temperature.enabled || rules.humidity.enabled,
+      autoWaterPumpMode: rules.water.autoMode,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   async testConnection(_settings: DeviceSettings): Promise<boolean> {
@@ -59,6 +65,9 @@ class MockDeviceApi implements DeviceApi {
       pumpOn: Math.random() > 0.5,
       feedMotorOn: Math.random() > 0.5,
       sprayerOn: Math.random() > 0.5,
+      autoLightMode: true,
+      autoTempMode: true,
+      autoWaterPumpMode: true,
       timestamp: new Date().toISOString(),
     };
   }

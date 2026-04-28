@@ -16,6 +16,7 @@ const defaultRules: AutomationRules = {
   water: {
     autoMode: true,
     minLevel: 20,
+    maxLevel: 80,
     targetLevel: 80,
   },
   feed: {
@@ -33,6 +34,7 @@ export interface AutomationState {
   rules: AutomationRules;
   loading: boolean;
   setRules: (rules: AutomationRules) => Promise<void>;
+  setAutoMode: (enabled: boolean) => Promise<AutomationRules>;
   loadRules: () => Promise<void>;
 }
 
@@ -42,6 +44,20 @@ const store: StateCreator<AutomationState> = (set, get) => ({
   async setRules(rules) {
     set({rules});
     await saveItem(STORAGE_KEYS.automationRules, rules);
+  },
+  async setAutoMode(enabled) {
+    const currentRules = get().rules;
+    const nextRules: AutomationRules = {
+      ...currentRules,
+      temperature: {...currentRules.temperature, enabled},
+      humidity: {...currentRules.humidity, enabled},
+      water: {...currentRules.water, autoMode: enabled},
+      feed: {...currentRules.feed, autoAlert: enabled},
+      lightSchedule: {...currentRules.lightSchedule, enabled},
+    };
+    set({rules: nextRules});
+    await saveItem(STORAGE_KEYS.automationRules, nextRules);
+    return nextRules;
   },
   async loadRules() {
     set({loading: true});
