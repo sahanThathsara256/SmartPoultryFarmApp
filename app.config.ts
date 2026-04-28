@@ -11,6 +11,7 @@ const config: ExpoConfig = {
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
+    bundleIdentifier: 'com.smartpoultryfarm.app',
     infoPlist: {
       NSAppTransportSecurity: {
         NSAllowsArbitraryLoads: true,
@@ -18,6 +19,9 @@ const config: ExpoConfig = {
       },
       NSLocalNetworkUsageDescription: 'This app needs to communicate with the ESP32 device on your local network.',
     },
+  },
+  android: {
+    package: 'com.smartpoultryfarm.app',
   },
   extra: {
     mockMode: process.env.MOCK_MODE ?? '0',
