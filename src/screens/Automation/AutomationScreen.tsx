@@ -132,28 +132,6 @@ const AutomationScreen = () => {
         />
       </RuleSection>
 
-      {/* <RuleSection
-        title="Light schedule"
-        enabled={localRules.lightSchedule.enabled}
-        onToggle={value => setLocalRules(prev => ({...prev, lightSchedule: {...prev.lightSchedule, enabled: value}}))}>
-        <View style={styles.inlineInputs}>
-          <InputField
-            styles={styles}
-            colors={colors}
-            label="On"
-            value={localRules.lightSchedule.onTime}
-            onChangeText={text => setLocalRules(prev => ({...prev, lightSchedule: {...prev.lightSchedule, onTime: text}}))}
-          />
-          <InputField
-            styles={styles}
-            colors={colors}
-            label="Off"
-            value={localRules.lightSchedule.offTime}
-            onChangeText={text => setLocalRules(prev => ({...prev, lightSchedule: {...prev.lightSchedule, offTime: text}}))}
-          />
-        </View>
-      </RuleSection> */}
-
       <Pressable style={styles.primaryBtn} onPress={handleSave}>
         <Text style={styles.primaryText}>Save rules</Text>
       </Pressable>
